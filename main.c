@@ -10,7 +10,7 @@
 
 typedef struct _rwlock_t {
     sem_t writelock;
-    sem_t lock;
+    sem_t readlock;
     sem_t resource;
     int readers;
     int writers;
@@ -19,34 +19,34 @@ typedef struct _rwlock_t {
 void rwlock_init(rwlock_t *lock) {
     lock->readers = 0;
     lock->writers = 0;
-    sem_init(&lock->lock, 0, 1); 
+    sem_init(&lock->readlock, 0, 1); 
     sem_init(&lock->writelock, 0, 1); 
     sem_init(&lock->resource,0, 1); 
 }
 
 void rwlock_acquire_readlock(rwlock_t *lock) {
-    sem_wait(&lock->lock);
+    sem_wait(&lock->readlock);
     
     
     if (lock->readers == 0 || lock->writers > 0){
-	    sem_post(&lock->lock);
+	    sem_post(&lock->readlock);
         sem_wait(&lock->resource); 
-        sem_wait(&lock->lock);
+        sem_wait(&lock->readlock);
         //printf("%d Wait writelock " ,lock->readers);
     }
     lock->readers++;
-    sem_post(&lock->lock);
+    sem_post(&lock->readlock);
 }
 
 void rwlock_release_readlock(rwlock_t *lock) {
-    sem_wait(&lock->lock);
+    sem_wait(&lock->readlock);
     lock->readers--;
     //printf("%d Read count -- " ,lock->readers);
     if (lock->readers == 0 ){
 	    sem_post(&lock->resource);
         //printf("%d post writelock " ,lock->readers);
     }
-    sem_post(&lock->lock);
+    sem_post(&lock->readlock);
 }
 
 void rwlock_acquire_writelock(rwlock_t *lock) {
@@ -85,9 +85,8 @@ void *readThread(void *arg) {
 }
 
 void *writeThread(void *arg) {
-    printf("Create Write\n");   
-	rwlock_acquire_writelock(arg);
-      
+    printf("Create Writer\n");   
+	rwlock_acquire_writelock(arg);  
     int x=0, T;      
     T = rand()%10000;   
     for(int i = 0; i < T; i++)   
