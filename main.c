@@ -4,7 +4,6 @@
 #include <sys/types.h>
 #include <pthread.h>
 #include <semaphore.h>
-#include "readerwriter.h"
 
 
 
@@ -27,7 +26,7 @@ void rwlock_init(rwlock_t *lock) {
 
 void rwlock_acquire_readlock(rwlock_t *lock) {
     sem_wait(&lock->lock);
-    lock->readers++;
+    
     
     if (lock->readers == 0 || lock->writers > 0){
 	    sem_post(&lock->lock);
@@ -35,6 +34,7 @@ void rwlock_acquire_readlock(rwlock_t *lock) {
         sem_wait(&lock->lock);
         //printf("%d Wait writelock " ,lock->readers);
     }
+    lock->readers++;
     sem_post(&lock->lock);
 }
 
@@ -63,24 +63,21 @@ void rwlock_release_writelock(rwlock_t *lock) {
     sem_post(&lock->resource);
 }
 
-int read_loops;
-int write_loops;
-int counter = 0;
 
-rwlock_t mutex;
+
 
 void *readThread(void *arg) {
-    int local = 0;
+    
     printf("Create reader \n");
-	rwlock_acquire_readlock(&mutex);
+	rwlock_acquire_readlock(arg);
 
     int x=0, T;      
     T = rand()%10000;   
     for(int i = 0; i < T; i++)   
         for(int j = 0; j < T; j++)    
             x=i*j;  
-	local = counter;
-	rwlock_release_readlock(&mutex);
+	
+	rwlock_release_readlock(arg);
 	
  
     printf("read done: \n");
@@ -89,7 +86,7 @@ void *readThread(void *arg) {
 
 void *writeThread(void *arg) {
     printf("Create Write\n");   
-	rwlock_acquire_writelock(&mutex);
+	rwlock_acquire_writelock(arg);
       
     int x=0, T;      
     T = rand()%10000;   
@@ -97,8 +94,8 @@ void *writeThread(void *arg) {
         for(int j = 0; j < T; j++)    
             x=i*j;  
 
-	counter++;
-	rwlock_release_writelock(&mutex);
+	
+	rwlock_release_writelock(arg);
 
     printf("write done\n");
     return NULL;
@@ -107,7 +104,7 @@ void *writeThread(void *arg) {
 int main()
 {
     //variables
-    //struct _rwlock_t *lock = malloc(sizeof(struct _rwlock_t));
+    struct _rwlock_t *lock = malloc(sizeof(struct _rwlock_t));
     char rw;
     FILE *file;
     int error;
@@ -116,7 +113,7 @@ int main()
     file = fopen("scenarios.txt", "r");
 
     //initialize lock
-   //rwlock_init(&mutex);
+   rwlock_init(lock);
      
     //for threads
     pthread_t thread;
@@ -132,7 +129,7 @@ int main()
             {
 
                 //if read create a thread to run the readThread
-                error = pthread_create(&thread, NULL, (void *)readThread, (void *)&mutex);
+                error = pthread_create(&thread, NULL, (void *)readThread, (void *)&lock);
                 if (error != 0)
                 {
                     printf("Can't create thread.\n");
@@ -144,7 +141,7 @@ int main()
             {
 
                 //if write create a thread to run the writeThread
-                error = pthread_create(&thread, NULL, (void *)writeThread, (void *)&mutex);
+                error = pthread_create(&thread, NULL, (void *)writeThread, (void *)&lock);
                 if (error != 0)
                 {
                     printf("Can't create thread.\n");
