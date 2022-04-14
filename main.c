@@ -36,6 +36,7 @@ void rwlock_acquire_readlock(rwlock_t *lock) {
     }
     lock->readers++;
     sem_post(&lock->readlock);
+    printf("Create reader \n");
 }
 
 void rwlock_release_readlock(rwlock_t *lock) {
@@ -47,6 +48,7 @@ void rwlock_release_readlock(rwlock_t *lock) {
         //printf("%d post writelock " ,lock->readers);
     }
     sem_post(&lock->readlock);
+    printf("read done: \n");
 }
 
 void rwlock_acquire_writelock(rwlock_t *lock) {
@@ -54,6 +56,7 @@ void rwlock_acquire_writelock(rwlock_t *lock) {
     lock->writers++;
     sem_post(&lock->writelock); 
     sem_wait(&lock->resource);
+    printf("Create Writer\n");   
 }
 
 void rwlock_release_writelock(rwlock_t *lock) {
@@ -61,6 +64,7 @@ void rwlock_release_writelock(rwlock_t *lock) {
      lock->writers--;
     sem_post(&lock->writelock);
     sem_post(&lock->resource);
+     printf("write done\n");
 }
 
 
@@ -68,9 +72,9 @@ void rwlock_release_writelock(rwlock_t *lock) {
 
 void *readThread(void *arg) {
     
-    printf("Create reader \n");
+    
 	rwlock_acquire_readlock(arg);
-
+    //printf("Create reader \n");
     int x=0, T;      
     T = rand()%10000;   
     for(int i = 0; i < T; i++)   
@@ -80,13 +84,14 @@ void *readThread(void *arg) {
 	rwlock_release_readlock(arg);
 	
  
-    printf("read done: \n");
+    //printf("read done: \n");
     return NULL;
 }
 
 void *writeThread(void *arg) {
-    printf("Create Writer\n");   
+    
 	rwlock_acquire_writelock(arg);  
+    //printf("Create Writer\n");   
     int x=0, T;      
     T = rand()%10000;   
     for(int i = 0; i < T; i++)   
@@ -96,7 +101,7 @@ void *writeThread(void *arg) {
 	
 	rwlock_release_writelock(arg);
 
-    printf("write done\n");
+    //printf("write done\n");
     return NULL;
 }
 
@@ -123,7 +128,7 @@ int main()
         printf("Scenario Starts:\n");
         while (fscanf(file, "%c", &rw) != EOF)
         {
-
+            //printf("%c\n",rw);
             if (rw == 'r')
             {
 
